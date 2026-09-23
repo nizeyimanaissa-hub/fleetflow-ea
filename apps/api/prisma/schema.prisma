@@ -60,8 +60,9 @@ model Driver {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
-  company Company @relation(fields: [companyId], references: [id])
-  trips   Trip[]
+  company        Company         @relation(fields: [companyId], references: [id])
+  trips          Trip[]
+  salaryPayments SalaryPayment[]
 
   @@unique([companyId, email])
   @@unique([companyId, licenseNumber])
@@ -86,11 +87,55 @@ model Vehicle {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  company Company @relation(fields: [companyId], references: [id])
-  trips   Trip[]
+  company            Company             @relation(fields: [companyId], references: [id])
+  trips              Trip[]
+  fuelLogs           FuelLog[]
+  maintenanceRecords MaintenanceRecord[]
 
   @@unique([companyId, plateNumber])
   @@index([companyId])
+}
+
+model FuelLog {
+  id         String   @id @default(uuid())
+  vehicleId  String
+  liters     Float
+  costTotal  Float
+  odometerKm Int
+  filledAt   DateTime
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@index([vehicleId])
+  @@index([vehicleId, filledAt])
+}
+
+model MaintenanceRecord {
+  id          String   @id @default(uuid())
+  vehicleId   String
+  description String
+  cost        Float
+  odometerKm  Int?
+  performedAt DateTime
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@index([vehicleId])
+  @@index([vehicleId, performedAt])
+}
+
+model SalaryPayment {
+  id          String   @id @default(uuid())
+  driverId    String
+  amount      Float
+  periodStart DateTime
+  periodEnd   DateTime
+  paidAt      DateTime
+
+  driver Driver @relation(fields: [driverId], references: [id])
+
+  @@index([driverId])
+  @@index([driverId, paidAt])
 }
 
 enum TripStatus {
@@ -113,14 +158,40 @@ model Trip {
   endedAt        DateTime?
   distanceKm     Float?
   status         TripStatus @default(SCHEDULED)
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
 
-  company Company @relation(fields: [companyId], references: [id])
-  driver  Driver  @relation(fields: [driverId], references: [id])
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+  originLat        Float
+  originLng        Float
+  destinationLat   Float
+  destinationLng   Float
+  routeDistanceKm  Float?
+  routeDurationMin Float?
+  routeGeometry    Json?
+  estimatedArrival DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company  Company   @relation(fields: [companyId], references: [id])
+  driver   Driver    @relation(fields: [driverId], references: [id])
+  vehicle  Vehicle   @relation(fields: [vehicleId], references: [id])
+  gpsPings GpsPing[]
 
   @@index([companyId])
   @@index([driverId])
   @@index([vehicleId])
+}
+
+model GpsPing {
+  id         String   @id @default(uuid())
+  tripId     String
+  lat        Float
+  lng        Float
+  speedKmh   Float?
+  offRoute   Boolean  @default(false)
+  recordedAt DateTime @default(now())
+
+  trip Trip @relation(fields: [tripId], references: [id])
+
+  @@index([tripId])
+  @@index([tripId, recordedAt])
 }

@@ -11,4 +11,9 @@ export class AssignTripDto {
 
   scheduledStart!: string;
   scheduledEnd!: string;
+
+  originLat!: number;
+  originLng!: number;
+  destinationLat!: number;
+  destinationLng!: number;
 }

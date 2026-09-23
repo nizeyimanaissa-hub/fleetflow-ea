@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { RoutingService } from '../routing/routing.service.js';
 import type { Trip } from '../generated/prisma/client.js';
 import { AssignTripDto } from './dto/assign-trip.dto.js';
 
@@ -19,7 +20,10 @@ const ACTIVE_TRIP_STATUSES = ['SCHEDULED', 'IN_PROGRESS'] as const;
 
 @Injectable()
 export class TripsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly routing: RoutingService,
+  ) {}
 
   async assign(dto: AssignTripDto): Promise<Trip> {
     const scheduledStart = new Date(dto.scheduledStart);
@@ -37,6 +41,17 @@ export class TripsService {
       throw new BadRequestException(
         'scheduledEnd must be after scheduledStart',
       );
+    }
+
+    for (const [name, value, max] of [
+      ['originLat', dto.originLat, 90],
+      ['destinationLat', dto.destinationLat, 90],
+      ['originLng', dto.originLng, 180],
+      ['destinationLng', dto.destinationLng, 180],
+    ] as const) {
+      if (typeof value !== 'number' || Number.isNaN(value) || Math.abs(value) > max) {
+        throw new BadRequestException(`${name} must be a number within +/-${max}`);
+      }
     }
 
     const [driver, vehicle, rule] = await Promise.all([
@@ -161,6 +176,13 @@ export class TripsService {
       );
     }
 
+    const route = await this.routing.route(
+      dto.originLat,
+      dto.originLng,
+      dto.destinationLat,
+      dto.destinationLng,
+    );
+
     return this.prisma.trip.create({
       data: {
         companyId: dto.companyId,
@@ -171,6 +193,16 @@ export class TripsService {
         scheduledStart,
         scheduledEnd,
         status: 'SCHEDULED',
+        originLat: dto.originLat,
+        originLng: dto.originLng,
+        destinationLat: dto.destinationLat,
+        destinationLng: dto.destinationLng,
+        routeDistanceKm: route.distanceKm,
+        routeDurationMin: route.durationMin,
+        routeGeometry: route.geometry,
+        estimatedArrival: new Date(
+          scheduledStart.getTime() + route.durationMin * 60_000,
+        ),
       },
     });
   }
@@ -231,9 +263,32 @@ export class TripsService {
         `Trip ${id} must be IN_PROGRESS to complete (currently ${trip.status})`,
       );
     }
+
+    // Fall back to the planned route distance if the actual distance driven
+    // wasn't reported, so the vehicle's odometer keeps moving either way.
+    const finalDistanceKm = distanceKm ?? trip.routeDistanceKm ?? undefined;
+
+    if (finalDistanceKm) {
+      const [updatedTrip] = await this.prisma.$transaction([
+        this.prisma.trip.update({
+          where: { id },
+          data: {
+            status: 'COMPLETED',
+            endedAt: new Date(),
+            distanceKm: finalDistanceKm,
+          },
+        }),
+        this.prisma.vehicle.update({
+          where: { id: trip.vehicleId },
+          data: { odometerKm: { increment: Math.round(finalDistanceKm) } },
+        }),
+      ]);
+      return updatedTrip;
+    }
+
     return this.prisma.trip.update({
       where: { id },
-      data: { status: 'COMPLETED', endedAt: new Date(), distanceKm },
+      data: { status: 'COMPLETED', endedAt: new Date() },
     });
   }
 }

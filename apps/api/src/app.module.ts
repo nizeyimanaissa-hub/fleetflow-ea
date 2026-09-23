@@ -7,6 +7,11 @@ import { TripsModule } from './trips/trips.module.js';
 import { CompaniesModule } from './companies/companies.module.js';
 import { DriversModule } from './drivers/drivers.module.js';
 import { VehiclesModule } from './vehicles/vehicles.module.js';
+import { GpsModule } from './gps/gps.module.js';
+import { FuelLogsModule } from './fuel-logs/fuel-logs.module.js';
+import { MaintenanceModule } from './maintenance/maintenance.module.js';
+import { SalaryModule } from './salary/salary.module.js';
+import { ReportsModule } from './reports/reports.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -24,6 +29,11 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     DriversModule,
     VehiclesModule,
     TripsModule,
+    GpsModule,
+    FuelLogsModule,
+    MaintenanceModule,
+    SalaryModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

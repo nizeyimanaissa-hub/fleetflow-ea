@@ -79,7 +79,14 @@ export class DriversService {
   async update(id: string, dto: UpdateDriverDto): Promise<Driver> {
     await this.findOne(id);
 
-    const data: Prisma.DriverUpdateInput = { ...dto };
+    const data: Prisma.DriverUpdateInput = {
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      email: dto.email,
+      phone: dto.phone,
+      licenseNumber: dto.licenseNumber,
+      status: dto.status,
+    };
     if (dto.licenseExpiry) {
       const licenseExpiry = new Date(dto.licenseExpiry);
       if (Number.isNaN(licenseExpiry.getTime())) {

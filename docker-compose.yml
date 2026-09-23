@@ -16,5 +16,23 @@ services:
       timeout: 5s
       retries: 10
 
+  osrm:
+    image: osrm/osrm-backend
+    restart: unless-stopped
+    # Requires preprocessed data first — run scripts/setup-osrm.sh once.
+    #
+    # Currently pointed at Berlin (a small Germany sub-region) because a
+    # full-Germany extract needs more RAM than this machine's Docker Desktop
+    # had allocated. To switch to full Germany once you've raised Docker's
+    # memory limit (Settings -> Resources), run:
+    #   REGION=germany ./scripts/setup-osrm.sh
+    # (the .osm.pbf is already downloaded in osrm-data/) then change the path
+    # below to /data/germany-latest.osrm.
+    command: osrm-routed --algorithm mld /data/berlin-latest.osrm
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./osrm-data:/data
+
 volumes:
   postgres_data:
