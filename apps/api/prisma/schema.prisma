@@ -18,4 +18,109 @@ model Company {
   name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  drivers  Driver[]
+  vehicles Vehicle[]
+  trips    Trip[]
+
+  schedulingRule SchedulingRule?
+}
+
+model SchedulingRule {
+  id        String @id @default(uuid())
+  companyId String @unique
+
+  maxDrivingHoursPerDay     Float @default(8)
+  maxDrivingHoursPerWeek    Float @default(48)
+  minRestHoursBetweenTrips  Float @default(11)
+  maxConsecutiveDrivingDays Int   @default(6)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+}
+
+enum DriverStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+model Driver {
+  id            String       @id @default(uuid())
+  companyId     String
+  firstName     String
+  lastName      String
+  email         String
+  phone         String
+  licenseNumber String
+  licenseExpiry DateTime
+  status        DriverStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  trips   Trip[]
+
+  @@unique([companyId, email])
+  @@unique([companyId, licenseNumber])
+  @@index([companyId])
+}
+
+enum VehicleStatus {
+  ACTIVE
+  MAINTENANCE
+  RETIRED
+}
+
+model Vehicle {
+  id          String        @id @default(uuid())
+  companyId   String
+  plateNumber String
+  make        String
+  model       String
+  year        Int
+  status      VehicleStatus @default(ACTIVE)
+  odometerKm  Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  trips   Trip[]
+
+  @@unique([companyId, plateNumber])
+  @@index([companyId])
+}
+
+enum TripStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model Trip {
+  id             String     @id @default(uuid())
+  companyId      String
+  driverId       String
+  vehicleId      String
+  startLocation  String
+  endLocation    String?
+  scheduledStart DateTime
+  scheduledEnd   DateTime
+  startedAt      DateTime?
+  endedAt        DateTime?
+  distanceKm     Float?
+  status         TripStatus @default(SCHEDULED)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  driver  Driver  @relation(fields: [driverId], references: [id])
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@index([companyId])
+  @@index([driverId])
+  @@index([vehicleId])
 }
