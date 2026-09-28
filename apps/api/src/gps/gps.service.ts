@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -20,15 +19,6 @@ export class GpsService {
   ) {}
 
   async ingest(tripId: string, dto: CreateGpsPingDto): Promise<GpsPing> {
-    if (
-      typeof dto.lat !== 'number' ||
-      typeof dto.lng !== 'number' ||
-      Math.abs(dto.lat) > 90 ||
-      Math.abs(dto.lng) > 180
-    ) {
-      throw new BadRequestException('lat/lng must be valid coordinates');
-    }
-
     const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
     if (!trip) {
       throw new NotFoundException(`Trip ${tripId} not found`);
@@ -39,10 +29,7 @@ export class GpsService {
       );
     }
 
-    const recordedAt = dto.recordedAt ? new Date(dto.recordedAt) : new Date();
-    if (Number.isNaN(recordedAt.getTime())) {
-      throw new BadRequestException('recordedAt must be a valid date');
-    }
+    const recordedAt = dto.recordedAt ?? new Date();
 
     const geometry = trip.routeGeometry as [number, number][] | null;
     const offRoute = this.isOffRoute(dto.lat, dto.lng, geometry);

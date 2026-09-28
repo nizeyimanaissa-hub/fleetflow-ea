@@ -125,6 +125,24 @@ Cost and performance reports (all take optional `?from=&to=`):
 - `GET /companies/:id/performance` — fleet-wide rollup (vehicle/driver counts,
   trips, distance, hours, cost per km) plus the full cost report
 
+### Validation
+
+Request bodies, query strings, and id params are validated with
+[Zod](https://zod.dev). Each DTO is a Zod schema wrapped by `createZodDto`
+(`apps/api/src/common/validation/`), which a global `ZodValidationPipe` uses to
+parse the request and Swagger uses to document it. Ids must be UUIDs, dates ISO
+8601 strings (parsed to `Date` before reaching services). Invalid input returns
+`400` with every problem listed:
+
+```json
+{
+  "statusCode": 400,
+  "error": "Bad Request",
+  "message": "Validation failed",
+  "issues": [{ "path": "originLat", "message": "Too big: expected number to be <=90" }]
+}
+```
+
 ### Safe trip assignment
 
 `POST /trips/assign` rejects a trip (`409 Conflict`) instead of creating it if

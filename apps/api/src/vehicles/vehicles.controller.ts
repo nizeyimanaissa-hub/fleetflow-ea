@@ -3,12 +3,13 @@ import {
   Controller,
   Delete,
   Get,
-  Param,
   Patch,
   Post,
   Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { CompanyFilterQueryDto } from '../common/validation/query.dto.js';
+import { UuidParam } from '../common/validation/uuid-param.decorator.js';
 import { VehiclesService } from './vehicles.service.js';
 import { CreateVehicleDto } from './dto/create-vehicle.dto.js';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto.js';
@@ -24,22 +25,22 @@ export class VehiclesController {
   }
 
   @Get()
-  findAll(@Query('companyId') companyId?: string) {
-    return this.vehiclesService.findAll(companyId);
+  findAll(@Query() query: CompanyFilterQueryDto) {
+    return this.vehiclesService.findAll(query.companyId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@UuidParam('id') id: string) {
     return this.vehiclesService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateVehicleDto) {
+  update(@UuidParam('id') id: string, @Body() dto: UpdateVehicleDto) {
     return this.vehiclesService.update(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@UuidParam('id') id: string) {
     return this.vehiclesService.remove(id);
   }
 }

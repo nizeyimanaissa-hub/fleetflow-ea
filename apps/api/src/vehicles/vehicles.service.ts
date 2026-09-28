@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -10,25 +9,11 @@ import type { Vehicle } from '../generated/prisma/client.js';
 import { CreateVehicleDto } from './dto/create-vehicle.dto.js';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto.js';
 
-const REQUIRED_FIELDS: (keyof CreateVehicleDto)[] = [
-  'companyId',
-  'plateNumber',
-  'make',
-  'model',
-  'year',
-];
-
 @Injectable()
 export class VehiclesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateVehicleDto): Promise<Vehicle> {
-    for (const field of REQUIRED_FIELDS) {
-      if (!dto[field]) {
-        throw new BadRequestException(`${field} is required`);
-      }
-    }
-
     const company = await this.prisma.company.findUnique({
       where: { id: dto.companyId },
     });

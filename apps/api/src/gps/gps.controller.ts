@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { UuidParam } from '../common/validation/uuid-param.decorator.js';
 import { GpsService } from './gps.service.js';
 import { CreateGpsPingDto } from './dto/create-gps-ping.dto.js';
 
@@ -9,17 +10,17 @@ export class GpsController {
   constructor(private readonly gpsService: GpsService) {}
 
   @Post('trips/:tripId/gps')
-  ingest(@Param('tripId') tripId: string, @Body() dto: CreateGpsPingDto) {
+  ingest(@UuidParam('tripId') tripId: string, @Body() dto: CreateGpsPingDto) {
     return this.gpsService.ingest(tripId, dto);
   }
 
   @Get('trips/:tripId/gps')
-  history(@Param('tripId') tripId: string) {
+  history(@UuidParam('tripId') tripId: string) {
     return this.gpsService.history(tripId);
   }
 
   @Get('trips/:tripId/location')
-  location(@Param('tripId') tripId: string) {
+  location(@UuidParam('tripId') tripId: string) {
     return this.gpsService.latest(tripId);
   }
 }

@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -26,33 +25,8 @@ export class TripsService {
   ) {}
 
   async assign(dto: AssignTripDto): Promise<Trip> {
-    const scheduledStart = new Date(dto.scheduledStart);
-    const scheduledEnd = new Date(dto.scheduledEnd);
-
-    if (
-      Number.isNaN(scheduledStart.getTime()) ||
-      Number.isNaN(scheduledEnd.getTime())
-    ) {
-      throw new BadRequestException(
-        'scheduledStart and scheduledEnd must be valid dates',
-      );
-    }
-    if (scheduledEnd <= scheduledStart) {
-      throw new BadRequestException(
-        'scheduledEnd must be after scheduledStart',
-      );
-    }
-
-    for (const [name, value, max] of [
-      ['originLat', dto.originLat, 90],
-      ['destinationLat', dto.destinationLat, 90],
-      ['originLng', dto.originLng, 180],
-      ['destinationLng', dto.destinationLng, 180],
-    ] as const) {
-      if (typeof value !== 'number' || Number.isNaN(value) || Math.abs(value) > max) {
-        throw new BadRequestException(`${name} must be a number within +/-${max}`);
-      }
-    }
+    // Already parsed into Dates, with end after start, by the DTO schema.
+    const { scheduledStart, scheduledEnd } = dto;
 
     const [driver, vehicle, rule] = await Promise.all([
       this.prisma.driver.findFirst({

@@ -1,15 +1,9 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import type { DriverStatus } from '../../generated/prisma/client.js';
-import { DriverStatus as DriverStatusEnum } from '../../generated/prisma/client.js';
+import { createZodDto } from '../../common/validation/create-zod-dto.js';
+import { createDriverSchema } from './create-driver.dto.js';
 
-export class UpdateDriverDto {
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phone?: string;
-  licenseNumber?: string;
-  licenseExpiry?: string;
+// A driver can't be moved to another company, so companyId isn't updatable.
+export const updateDriverSchema = createDriverSchema
+  .omit({ companyId: true })
+  .partial();
 
-  @ApiPropertyOptional({ enum: DriverStatusEnum })
-  status?: DriverStatus;
-}
+export class UpdateDriverDto extends createZodDto(updateDriverSchema) {}

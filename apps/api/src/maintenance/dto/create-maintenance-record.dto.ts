@@ -1,10 +1,14 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { z } from 'zod';
+import { createZodDto } from '../../common/validation/create-zod-dto.js';
+import { isoDate, nonEmptyString } from '../../common/validation/schemas.js';
 
-export class CreateMaintenanceRecordDto {
-  description!: string;
-  cost!: number;
-  performedAt!: string;
+export const createMaintenanceRecordSchema = z.object({
+  description: nonEmptyString(),
+  cost: z.number().nonnegative(),
+  performedAt: isoDate(),
+  odometerKm: z.number().int().nonnegative().optional(),
+});
 
-  @ApiPropertyOptional()
-  odometerKm?: number;
-}
+export class CreateMaintenanceRecordDto extends createZodDto(
+  createMaintenanceRecordSchema,
+) {}

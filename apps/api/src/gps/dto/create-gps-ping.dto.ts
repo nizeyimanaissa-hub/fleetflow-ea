@@ -1,14 +1,18 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { z } from 'zod';
+import { createZodDto } from '../../common/validation/create-zod-dto.js';
+import {
+  isoDate,
+  latitude,
+  longitude,
+} from '../../common/validation/schemas.js';
 
-export class CreateGpsPingDto {
-  lat!: number;
-  lng!: number;
+export const createGpsPingSchema = z.object({
+  lat: latitude(),
+  lng: longitude(),
+  speedKmh: z.number().nonnegative().optional(),
+  recordedAt: isoDate()
+    .optional()
+    .meta({ description: 'Defaults to the current time if omitted' }),
+});
 
-  @ApiPropertyOptional()
-  speedKmh?: number;
-
-  @ApiPropertyOptional({
-    description: 'Defaults to the current time if omitted',
-  })
-  recordedAt?: string;
-}
+export class CreateGpsPingDto extends createZodDto(createGpsPingSchema) {}

@@ -1,19 +1,29 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { z } from 'zod';
+import { createZodDto } from '../../common/validation/create-zod-dto.js';
+import {
+  isoDate,
+  latitude,
+  longitude,
+  nonEmptyString,
+} from '../../common/validation/schemas.js';
 
-export class AssignTripDto {
-  companyId!: string;
-  driverId!: string;
-  vehicleId!: string;
-  startLocation!: string;
+export const assignTripSchema = z
+  .object({
+    companyId: z.uuid(),
+    driverId: z.uuid(),
+    vehicleId: z.uuid(),
+    startLocation: nonEmptyString(),
+    endLocation: nonEmptyString().optional(),
+    scheduledStart: isoDate(),
+    scheduledEnd: isoDate(),
+    originLat: latitude(),
+    originLng: longitude(),
+    destinationLat: latitude(),
+    destinationLng: longitude(),
+  })
+  .refine((trip) => trip.scheduledEnd > trip.scheduledStart, {
+    error: 'scheduledEnd must be after scheduledStart',
+    path: ['scheduledEnd'],
+  });
 
-  @ApiPropertyOptional()
-  endLocation?: string;
-
-  scheduledStart!: string;
-  scheduledEnd!: string;
-
-  originLat!: number;
-  originLng!: number;
-  destinationLat!: number;
-  destinationLng!: number;
-}
+export class AssignTripDto extends createZodDto(assignTripSchema) {}

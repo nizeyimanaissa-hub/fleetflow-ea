@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+import { APP_PIPE } from '@nestjs/core';
 import { createObserveModule } from '@nestjs/observe';
+import { ZodValidationPipe } from './common/validation/zod-validation.pipe.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { PrismaModule } from './prisma/prisma.module.js';
@@ -36,6 +38,10 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     ReportsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Validates every @Body()/@Query() typed with a createZodDto class.
+    { provide: APP_PIPE, useValue: new ZodValidationPipe() },
+  ],
 })
 export class AppModule {}

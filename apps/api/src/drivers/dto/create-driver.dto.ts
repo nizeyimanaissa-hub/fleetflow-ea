@@ -1,16 +1,17 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import type { DriverStatus } from '../../generated/prisma/client.js';
-import { DriverStatus as DriverStatusEnum } from '../../generated/prisma/client.js';
+import { z } from 'zod';
+import { DriverStatus } from '../../generated/prisma/client.js';
+import { createZodDto } from '../../common/validation/create-zod-dto.js';
+import { isoDate, nonEmptyString } from '../../common/validation/schemas.js';
 
-export class CreateDriverDto {
-  companyId!: string;
-  firstName!: string;
-  lastName!: string;
-  email!: string;
-  phone!: string;
-  licenseNumber!: string;
-  licenseExpiry!: string;
+export const createDriverSchema = z.object({
+  companyId: z.uuid(),
+  firstName: nonEmptyString(),
+  lastName: nonEmptyString(),
+  email: z.email(),
+  phone: nonEmptyString(),
+  licenseNumber: nonEmptyString(),
+  licenseExpiry: isoDate(),
+  status: z.enum(DriverStatus).optional(),
+});
 
-  @ApiPropertyOptional({ enum: DriverStatusEnum })
-  status?: DriverStatus;
-}
+export class CreateDriverDto extends createZodDto(createDriverSchema) {}

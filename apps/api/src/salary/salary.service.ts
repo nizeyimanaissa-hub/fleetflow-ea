@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { SalaryPayment } from '../generated/prisma/client.js';
 import type { CreateSalaryPaymentDto } from './dto/create-salary-payment.dto.js';
@@ -13,27 +13,14 @@ export class SalaryService {
   ): Promise<SalaryPayment> {
     await this.ensureDriverExists(driverId);
 
-    if (dto.amount < 0) {
-      throw new BadRequestException('amount must be >= 0');
-    }
-    const periodStart = new Date(dto.periodStart);
-    const periodEnd = new Date(dto.periodEnd);
-    const paidAt = new Date(dto.paidAt);
-    if (
-      Number.isNaN(periodStart.getTime()) ||
-      Number.isNaN(periodEnd.getTime()) ||
-      Number.isNaN(paidAt.getTime())
-    ) {
-      throw new BadRequestException(
-        'periodStart, periodEnd, and paidAt must be valid dates',
-      );
-    }
-    if (periodEnd <= periodStart) {
-      throw new BadRequestException('periodEnd must be after periodStart');
-    }
-
     return this.prisma.salaryPayment.create({
-      data: { driverId, amount: dto.amount, periodStart, periodEnd, paidAt },
+      data: {
+        driverId,
+        amount: dto.amount,
+        periodStart: dto.periodStart,
+        periodEnd: dto.periodEnd,
+        paidAt: dto.paidAt,
+      },
     });
   }
 

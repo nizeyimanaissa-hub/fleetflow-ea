@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { UuidParam } from '../common/validation/uuid-param.decorator.js';
 import { MaintenanceService } from './maintenance.service.js';
 import { CreateMaintenanceRecordDto } from './dto/create-maintenance-record.dto.js';
 
@@ -10,14 +11,14 @@ export class MaintenanceController {
 
   @Post('vehicles/:vehicleId/maintenance-records')
   create(
-    @Param('vehicleId') vehicleId: string,
+    @UuidParam('vehicleId') vehicleId: string,
     @Body() dto: CreateMaintenanceRecordDto,
   ) {
     return this.maintenanceService.create(vehicleId, dto);
   }
 
   @Get('vehicles/:vehicleId/maintenance-records')
-  findAll(@Param('vehicleId') vehicleId: string) {
+  findAll(@UuidParam('vehicleId') vehicleId: string) {
     return this.maintenanceService.findAll(vehicleId);
   }
 }

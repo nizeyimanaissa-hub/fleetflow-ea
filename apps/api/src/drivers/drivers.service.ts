@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -10,32 +9,11 @@ import type { Driver } from '../generated/prisma/client.js';
 import { CreateDriverDto } from './dto/create-driver.dto.js';
 import { UpdateDriverDto } from './dto/update-driver.dto.js';
 
-const REQUIRED_FIELDS: (keyof CreateDriverDto)[] = [
-  'companyId',
-  'firstName',
-  'lastName',
-  'email',
-  'phone',
-  'licenseNumber',
-  'licenseExpiry',
-];
-
 @Injectable()
 export class DriversService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateDriverDto): Promise<Driver> {
-    for (const field of REQUIRED_FIELDS) {
-      if (!dto[field]) {
-        throw new BadRequestException(`${field} is required`);
-      }
-    }
-
-    const licenseExpiry = new Date(dto.licenseExpiry);
-    if (Number.isNaN(licenseExpiry.getTime())) {
-      throw new BadRequestException('licenseExpiry must be a valid date');
-    }
-
     const company = await this.prisma.company.findUnique({
       where: { id: dto.companyId },
     });
@@ -52,7 +30,7 @@ export class DriversService {
           email: dto.email,
           phone: dto.phone,
           licenseNumber: dto.licenseNumber,
-          licenseExpiry,
+          licenseExpiry: dto.licenseExpiry,
           status: dto.status,
         },
       });
@@ -85,15 +63,9 @@ export class DriversService {
       email: dto.email,
       phone: dto.phone,
       licenseNumber: dto.licenseNumber,
+      licenseExpiry: dto.licenseExpiry,
       status: dto.status,
     };
-    if (dto.licenseExpiry) {
-      const licenseExpiry = new Date(dto.licenseExpiry);
-      if (Number.isNaN(licenseExpiry.getTime())) {
-        throw new BadRequestException('licenseExpiry must be a valid date');
-      }
-      data.licenseExpiry = licenseExpiry;
-    }
 
     try {
       return await this.prisma.driver.update({ where: { id }, data });

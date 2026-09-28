@@ -1,17 +1,20 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import type { VehicleStatus } from '../../generated/prisma/client.js';
-import { VehicleStatus as VehicleStatusEnum } from '../../generated/prisma/client.js';
+import { z } from 'zod';
+import { VehicleStatus } from '../../generated/prisma/client.js';
+import { createZodDto } from '../../common/validation/create-zod-dto.js';
+import { nonEmptyString } from '../../common/validation/schemas.js';
 
-export class CreateVehicleDto {
-  companyId!: string;
-  plateNumber!: string;
-  make!: string;
-  model!: string;
-  year!: number;
+export const createVehicleSchema = z.object({
+  companyId: z.uuid(),
+  plateNumber: nonEmptyString(),
+  make: nonEmptyString(),
+  model: nonEmptyString(),
+  year: z
+    .number()
+    .int()
+    .min(1900)
+    .max(new Date().getFullYear() + 1),
+  status: z.enum(VehicleStatus).optional(),
+  odometerKm: z.number().int().nonnegative().optional(),
+});
 
-  @ApiPropertyOptional({ enum: VehicleStatusEnum })
-  status?: VehicleStatus;
-
-  @ApiPropertyOptional()
-  odometerKm?: number;
-}
+export class CreateVehicleDto extends createZodDto(createVehicleSchema) {}
