@@ -4,12 +4,29 @@ A fleet management API: companies, drivers, vehicles, and trips, with
 configurable scheduling rules, conflict-safe trip assignment, GPS tracking,
 real road-based routing/ETA, and fuel/maintenance/salary cost reporting.
 
-## Prerequisites
+## Quick start (everything in Docker)
+
+```bash
+docker compose up --build
+```
+
+This starts Postgres, applies Prisma migrations, downloads and preprocesses
+the OSRM map on first run (cached in `osrm-data/` afterwards), starts OSRM,
+and serves the API on `http://localhost:3000`. No Node.js needed on the host.
+Stop your local `npm run start:dev` first — both use port 3000.
+
+The map region defaults to Berlin; set `OSRM_REGION` / `OSRM_PBF_URL` (e.g.
+in a root `.env`) to change it — see the comment at the top of
+`docker-compose.yml`.
+
+## Local development
+
+### Prerequisites
 
 - Docker (for PostgreSQL and OSRM routing)
 - Node.js + npm
 
-## Setup
+### Setup
 
 ```bash
 # 1. Start the database (from the repository root)
@@ -32,7 +49,7 @@ cd ..
 docker compose up -d osrm
 ```
 
-## Running the API
+### Running the API
 
 ```bash
 cd apps/api

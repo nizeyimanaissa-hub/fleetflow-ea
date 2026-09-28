@@ -1,3 +1,16 @@
+# `docker compose up` starts everything: Postgres, OSRM routing (downloading
+# and preprocessing the map on first run), database migrations, and the API.
+#
+# The map region is set by OSRM_REGION / OSRM_PBF_URL (default: Berlin).
+# A full-Germany extract needs more RAM than a default Docker Desktop setup
+# allows (it OOM-killed partway through with ~7.75GB) — raise Docker's memory
+# limit (Settings -> Resources, 12GB+) before switching, e.g. in a root .env:
+#   OSRM_REGION=germany
+#   OSRM_PBF_URL=https://download.geofabrik.de/europe/germany-latest.osm.pbf
+
+x-osrm-region: &osrm-region
+  OSRM_REGION: ${OSRM_REGION:-berlin}
+
 services:
   db:
     image: postgres:16-alpine
@@ -16,23 +29,85 @@ services:
       timeout: 5s
       retries: 10
 
+  # One-shot: download the map extract unless it's already in osrm-data/.
+  osrm-download:
+    image: curlimages/curl
+    user: root
+    environment:
+      <<: *osrm-region
+      OSRM_PBF_URL: ${OSRM_PBF_URL:-https://download.geofabrik.de/europe/germany/berlin-latest.osm.pbf}
+    volumes:
+      - ./osrm-data:/data
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        pbf="/data/$${OSRM_REGION}-latest.osm.pbf"
+        if [ -f "$$pbf" ]; then echo "Using cached $$pbf"; exit 0; fi
+        echo "Downloading $$OSRM_PBF_URL ..."
+        curl -L --fail -o "$$pbf.part" "$$OSRM_PBF_URL" && mv "$$pbf.part" "$$pbf"
+
+  # One-shot: build the routing graph unless it has already been built.
+  osrm-prepare:
+    image: osrm/osrm-backend
+    environment: *osrm-region
+    volumes:
+      - ./osrm-data:/data
+    depends_on:
+      osrm-download:
+        condition: service_completed_successfully
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        set -e
+        base="/data/$${OSRM_REGION}-latest"
+        if [ -f "$$base.osrm.mldgr" ]; then echo "Routing data for $$OSRM_REGION already prepared"; exit 0; fi
+        osrm-extract -p /opt/car.lua "$$base.osm.pbf"
+        osrm-partition "$$base.osrm"
+        osrm-customize "$$base.osrm"
+
   osrm:
     image: osrm/osrm-backend
     restart: unless-stopped
-    # Requires preprocessed data first — run scripts/setup-osrm.sh once.
-    #
-    # Currently pointed at Berlin (a small Germany sub-region) because a
-    # full-Germany extract needs more RAM than this machine's Docker Desktop
-    # had allocated. To switch to full Germany once you've raised Docker's
-    # memory limit (Settings -> Resources), run:
-    #   REGION=germany ./scripts/setup-osrm.sh
-    # (the .osm.pbf is already downloaded in osrm-data/) then change the path
-    # below to /data/germany-latest.osrm.
-    command: osrm-routed --algorithm mld /data/berlin-latest.osrm
+    environment: *osrm-region
+    entrypoint: ["bash", "-c"]
+    command: ['exec osrm-routed --algorithm mld "/data/$${OSRM_REGION}-latest.osrm"']
     ports:
       - "5001:5000"
     volumes:
       - ./osrm-data:/data
+    depends_on:
+      osrm-prepare:
+        condition: service_completed_successfully
+
+  # One-shot: apply pending Prisma migrations before the API starts.
+  migrate:
+    build:
+      context: ./apps/api
+      target: migrate
+    environment:
+      DATABASE_URL: postgresql://fleetflow:fleetflow_local@db:5432/fleetflow?schema=public
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    build:
+      context: ./apps/api
+      target: runtime
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://fleetflow:fleetflow_local@db:5432/fleetflow?schema=public
+      OSRM_URL: http://osrm:5000
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      osrm:
+        condition: service_started
 
 volumes:
   postgres_data:
