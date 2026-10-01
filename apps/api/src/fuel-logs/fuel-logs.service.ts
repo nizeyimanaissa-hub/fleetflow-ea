@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { FuelLog } from '../generated/prisma/client.js';
 import type { CreateFuelLogDto } from './dto/create-fuel-log.dto.js';
@@ -10,23 +10,13 @@ export class FuelLogsService {
   async create(vehicleId: string, dto: CreateFuelLogDto): Promise<FuelLog> {
     await this.ensureVehicleExists(vehicleId);
 
-    if (dto.liters <= 0 || dto.costTotal < 0 || dto.odometerKm < 0) {
-      throw new BadRequestException(
-        'liters must be > 0, costTotal and odometerKm must be >= 0',
-      );
-    }
-    const filledAt = new Date(dto.filledAt);
-    if (Number.isNaN(filledAt.getTime())) {
-      throw new BadRequestException('filledAt must be a valid date');
-    }
-
     return this.prisma.fuelLog.create({
       data: {
         vehicleId,
         liters: dto.liters,
         costTotal: dto.costTotal,
         odometerKm: dto.odometerKm,
-        filledAt,
+        filledAt: dto.filledAt,
       },
     });
   }

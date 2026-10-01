@@ -1,16 +1,9 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import type { VehicleStatus } from '../../generated/prisma/client.js';
-import { VehicleStatus as VehicleStatusEnum } from '../../generated/prisma/client.js';
+import { createZodDto } from '../../common/validation/create-zod-dto.js';
+import { createVehicleSchema } from './create-vehicle.dto.js';
 
-export class UpdateVehicleDto {
-  plateNumber?: string;
-  make?: string;
-  model?: string;
-  year?: number;
+// A vehicle can't be moved to another company, so companyId isn't updatable.
+export const updateVehicleSchema = createVehicleSchema
+  .omit({ companyId: true })
+  .partial();
 
-  @ApiPropertyOptional({ enum: VehicleStatusEnum })
-  status?: VehicleStatus;
-
-  @ApiPropertyOptional()
-  odometerKm?: number;
-}
+export class UpdateVehicleDto extends createZodDto(updateVehicleSchema) {}

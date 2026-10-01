@@ -3,12 +3,13 @@ import {
   Controller,
   Delete,
   Get,
-  Param,
   Patch,
   Post,
   Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { CompanyFilterQueryDto } from '../common/validation/query.dto.js';
+import { UuidParam } from '../common/validation/uuid-param.decorator.js';
 import { DriversService } from './drivers.service.js';
 import { CreateDriverDto } from './dto/create-driver.dto.js';
 import { UpdateDriverDto } from './dto/update-driver.dto.js';
@@ -24,22 +25,22 @@ export class DriversController {
   }
 
   @Get()
-  findAll(@Query('companyId') companyId?: string) {
-    return this.driversService.findAll(companyId);
+  findAll(@Query() query: CompanyFilterQueryDto) {
+    return this.driversService.findAll(query.companyId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@UuidParam('id') id: string) {
     return this.driversService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateDriverDto) {
+  update(@UuidParam('id') id: string, @Body() dto: UpdateDriverDto) {
     return this.driversService.update(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@UuidParam('id') id: string) {
     return this.driversService.remove(id);
   }
 }

@@ -1,5 +1,7 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { DateRangeQueryDto } from '../common/validation/query.dto.js';
+import { UuidParam } from '../common/validation/uuid-param.decorator.js';
 import { ReportsService } from './reports.service.js';
 
 @ApiTags('reports')
@@ -9,53 +11,45 @@ export class ReportsController {
 
   @Get('companies/:companyId/cost-report')
   costReport(
-    @Param('companyId') companyId: string,
-    @Query('from') from?: string,
-    @Query('to') to?: string,
+    @UuidParam('companyId') companyId: string,
+    @Query() range: DateRangeQueryDto,
   ) {
-    return this.reportsService.costReport(
-      companyId,
-      from ? new Date(from) : undefined,
-      to ? new Date(to) : undefined,
-    );
+    return this.reportsService.costReport(companyId, range.from, range.to);
   }
 
   @Get('companies/:companyId/performance')
   companyPerformance(
-    @Param('companyId') companyId: string,
-    @Query('from') from?: string,
-    @Query('to') to?: string,
+    @UuidParam('companyId') companyId: string,
+    @Query() range: DateRangeQueryDto,
   ) {
     return this.reportsService.companyPerformance(
       companyId,
-      from ? new Date(from) : undefined,
-      to ? new Date(to) : undefined,
+      range.from,
+      range.to,
     );
   }
 
   @Get('drivers/:driverId/performance')
   driverPerformance(
-    @Param('driverId') driverId: string,
-    @Query('from') from?: string,
-    @Query('to') to?: string,
+    @UuidParam('driverId') driverId: string,
+    @Query() range: DateRangeQueryDto,
   ) {
     return this.reportsService.driverPerformance(
       driverId,
-      from ? new Date(from) : undefined,
-      to ? new Date(to) : undefined,
+      range.from,
+      range.to,
     );
   }
 
   @Get('vehicles/:vehicleId/performance')
   vehiclePerformance(
-    @Param('vehicleId') vehicleId: string,
-    @Query('from') from?: string,
-    @Query('to') to?: string,
+    @UuidParam('vehicleId') vehicleId: string,
+    @Query() range: DateRangeQueryDto,
   ) {
     return this.reportsService.vehiclePerformance(
       vehicleId,
-      from ? new Date(from) : undefined,
-      to ? new Date(to) : undefined,
+      range.from,
+      range.to,
     );
   }
 }

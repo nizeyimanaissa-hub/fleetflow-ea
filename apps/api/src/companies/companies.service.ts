@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { Company } from '../generated/prisma/client.js';
 import { CreateCompanyDto } from './dto/create-company.dto.js';
@@ -13,9 +9,6 @@ export class CompaniesService {
   constructor(private readonly prisma: PrismaService) {}
 
   create(dto: CreateCompanyDto): Promise<Company> {
-    if (!dto.name?.trim()) {
-      throw new BadRequestException('name is required');
-    }
     return this.prisma.company.create({ data: { name: dto.name } });
   }
 

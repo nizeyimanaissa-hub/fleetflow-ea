@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { MaintenanceRecord } from '../generated/prisma/client.js';
 import type { CreateMaintenanceRecordDto } from './dto/create-maintenance-record.dto.js';
@@ -13,24 +13,13 @@ export class MaintenanceService {
   ): Promise<MaintenanceRecord> {
     await this.ensureVehicleExists(vehicleId);
 
-    if (!dto.description?.trim()) {
-      throw new BadRequestException('description is required');
-    }
-    if (dto.cost < 0) {
-      throw new BadRequestException('cost must be >= 0');
-    }
-    const performedAt = new Date(dto.performedAt);
-    if (Number.isNaN(performedAt.getTime())) {
-      throw new BadRequestException('performedAt must be a valid date');
-    }
-
     return this.prisma.maintenanceRecord.create({
       data: {
         vehicleId,
         description: dto.description,
         cost: dto.cost,
         odometerKm: dto.odometerKm,
-        performedAt,
+        performedAt: dto.performedAt,
       },
     });
   }
