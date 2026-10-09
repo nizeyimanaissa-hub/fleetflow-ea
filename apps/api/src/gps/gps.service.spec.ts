@@ -108,20 +108,68 @@ describe('GpsService', () => {
       });
     });
 
-    // KNOWN BUG: isOffRoute measures distance to the nearest route *vertex*,
-    // not the nearest segment. This ping sits on the route line, midway
-    // between two vertices ~1.1 km apart, so it is wrongly flagged. OSRM
-    // geometry has sparse vertices on long straight roads, so this happens
-    // in practice. Remove `.fails` once isOffRoute measures to segments.
-    it.fails(
-      'treats a point between two route vertices as on route',
-      async () => {
-        await service.ingest('t1', { lat: -1.995, lng: 30 });
+    // Distance is measured to the road between vertices, not just to the
+    // vertices: OSRM leaves long straight stretches with sparse vertices.
+    describe('between sparse route vertices', () => {
+      // One straight 22 km segment along longitude 30.
+      const SPARSE_ROUTE: [number, number][] = [
+        [30, -2.1],
+        [30, -1.9],
+      ];
+
+      beforeEach(() => {
+        prisma.trip.findUnique.mockResolvedValue(
+          inProgressTrip({ routeGeometry: SPARSE_ROUTE }),
+        );
+      });
+
+      it.each([
+        // ~11 km from either vertex, but on the road
+        ['on the segment midway is on route', -2, 30, false],
+        // 0.004° east of the road is ~0.44 km
+        ['~0.44 km beside the segment is on route', -2, 30.004, false],
+        // 0.005° east is ~0.56 km
+        ['~0.56 km beside the segment is off route', -2, 30.005, true],
+        // in line with the road but ~1.1 km past its end
+        ['beyond the end of the route is off route', -1.89, 30, true],
+      ])('%s', async (_name, lat, lng, offRoute) => {
+        await service.ingest('t1', { lat, lng });
         expect(prisma.gpsPing.create).toHaveBeenCalledWith({
-          data: expect.objectContaining({ offRoute: false }),
+          data: expect.objectContaining({ offRoute }),
         });
-      },
-    );
+      });
+    });
+
+    it('measures to the point when the route is a single vertex', async () => {
+      prisma.trip.findUnique.mockResolvedValue(
+        inProgressTrip({ routeGeometry: [[30, -2]] }),
+      );
+
+      await service.ingest('t1', { lat: -2, lng: 30.004 });
+      expect(prisma.gpsPing.create).toHaveBeenLastCalledWith({
+        data: expect.objectContaining({ offRoute: false }),
+      });
+
+      await service.ingest('t1', { lat: -2, lng: 30.005 });
+      expect(prisma.gpsPing.create).toHaveBeenLastCalledWith({
+        data: expect.objectContaining({ offRoute: true }),
+      });
+    });
+
+    it('handles a route with many thousands of vertices', async () => {
+      const longRoute = Array.from(
+        { length: 200_000 },
+        (_, i): [number, number] => [30, -2 + i * 0.00001],
+      );
+      prisma.trip.findUnique.mockResolvedValue(
+        inProgressTrip({ routeGeometry: longRoute }),
+      );
+
+      await service.ingest('t1', { lat: 10, lng: 10 });
+      expect(prisma.gpsPing.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ offRoute: true }),
+      });
+    });
 
     it.each([null, []])(
       'never flags off route without route geometry (%j)',
