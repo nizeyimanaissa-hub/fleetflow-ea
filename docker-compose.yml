@@ -33,6 +33,6 @@ services:
       - "5001:5000"
     volumes:
       - ./osrm-data:/data
-
+## add api as part of the docker setup
 volumes:
   postgres_data:
