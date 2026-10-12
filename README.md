@@ -197,6 +197,24 @@ npx prisma migrate status  # should report "Database schema is up to date!"
 curl "http://localhost:5001/route/v1/driving/13.3777,52.5163;13.4094,52.5208?overview=false"
 ```
 
+## Tests
+
+```bash
+# From apps/api
+npm test            # unit tests: services with Prisma mocked, no database
+npm run test:cov    # the same, with a coverage report in coverage/
+npm run test:e2e    # HTTP tests against the full app (needs the db container)
+```
+
+The e2e suite runs against a separate `fleetflow_test` database on the same
+Postgres (your `DATABASE_URL` with `_test` appended, or `TEST_DATABASE_URL` if
+set). It is created and migrated automatically, and emptied between tests; the
+setup refuses to run against any database whose name doesn't end in `_test`.
+OSRM is not needed: the e2e tests replace it with straight-line routes.
+
+Tests marked `it.fails` record known bugs; they pass while the bug exists and
+start failing once it's fixed, as a reminder to remove the `.fails`.
+
 ## Stop
 
 ```bash
