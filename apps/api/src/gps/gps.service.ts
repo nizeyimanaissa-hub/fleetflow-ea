@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RoutingService } from '../routing/routing.service.js';
-import { haversineKm } from '../common/geo.js';
+import { distanceToSegmentKm, haversineKm } from '../common/geo.js';
 import type { GpsPing } from '../generated/prisma/client.js';
 import type { CreateGpsPingDto } from './dto/create-gps-ping.dto.js';
 
@@ -105,9 +105,23 @@ export class GpsService {
     if (!geometry?.length) {
       return false;
     }
-    const nearestKm = Math.min(
-      ...geometry.map(([gLng, gLat]) => haversineKm(lat, lng, gLat, gLng)),
-    );
-    return nearestKm > OFF_ROUTE_THRESHOLD_KM;
+    if (geometry.length === 1) {
+      const [gLng, gLat] = geometry[0];
+      return haversineKm(lat, lng, gLat, gLng) > OFF_ROUTE_THRESHOLD_KM;
+    }
+
+    // Measure to the road between vertices, not just the vertices: OSRM
+    // leaves long straight stretches with vertices kilometres apart.
+    for (let i = 1; i < geometry.length; i++) {
+      const [aLng, aLat] = geometry[i - 1];
+      const [bLng, bLat] = geometry[i];
+      if (
+        distanceToSegmentKm(lat, lng, aLat, aLng, bLat, bLng) <=
+        OFF_ROUTE_THRESHOLD_KM
+      ) {
+        return false;
+      }
+    }
+    return true;
   }
 }
